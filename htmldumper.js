@@ -102,7 +102,7 @@ function* makeDump (apiURL, prefix, ns) {
 	//	articles = articles.concat(yield* getArticles(apiURL, ns, boundary));
 	//});
 	//yield async.eachLimit(boundaries, maxConcurrency, getArticleFn, resume());
-	async.eachLimit(boundaries, 2, suspend.async(function* (boundary) {
+	async.eachLimit(boundaries, 3, suspend.async(function* (boundary) {
 		console.log(boundary);
 		var articles = yield* getArticles(apiURL, ns, boundary);
 		//console.log(articles);
