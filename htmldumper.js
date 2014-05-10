@@ -8,7 +8,7 @@ var suspend = require('suspend'),
 	fs = require('fs');
 
 // Higher per-host parallelism
-var maxConcurrency = 15;
+var maxConcurrency = 30;
 http.globalAgent.maxSockets = 50;
 
 // retrying URL get helper
