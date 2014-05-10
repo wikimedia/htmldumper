@@ -97,24 +97,26 @@ function* makeDump (apiURL, prefix, ns) {
 				return b;
 			});
 	console.log(boundaries);
-	var getArticleFn = suspend.async(function* (boundary) {
-		articles = articles.concat(yield* getArticles(apiURL, ns, boundary));
-	});
-	yield async.eachLimit(boundaries, maxConcurrency, getArticleFn, resume());
-
-
-	//var articles = yield* getArticles(apiURL, ns);
-	//console.log(articles);
-	var dumpArticleFn = suspend.async(function* (article) {
-		var title = article[0],
-			oldid = article[1];
-		try {
-			return yield* dumpArticle(prefix, title, oldid);
-		} catch (e) {
-			console.error('Error in makeDump:', title, oldid, e);
-		}
-	});
-	yield async.eachLimit(articles, maxConcurrency, dumpArticleFn, resume());
+	// Get all articles at once
+	//var getArticleFn = suspend.async(function* (boundary) {
+	//	articles = articles.concat(yield* getArticles(apiURL, ns, boundary));
+	//});
+	//yield async.eachLimit(boundaries, maxConcurrency, getArticleFn, resume());
+	async.eachLimit(boundaries, 2, suspend(function* (boundary) {
+		console.log(boundary);
+		var articles = yield* getArticles(apiURL, ns, boundary);
+		//console.log(articles);
+		var dumpArticleFn = suspend.async(function* (article) {
+			var title = article[0],
+				oldid = article[1];
+			try {
+				return yield* dumpArticle(prefix, title, oldid);
+			} catch (e) {
+				console.error('Error in makeDump:', title, oldid, e);
+			}
+		});
+		yield async.eachLimit(articles, maxConcurrency, dumpArticleFn, resume());
+	}), resume());
 }
 
 if (module.parent === null) {
