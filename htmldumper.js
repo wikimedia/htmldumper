@@ -100,9 +100,11 @@ function* makeDump (apiURL, prefix, ns) {
 
 if (module.parent === null) {
 	var argv = require('yargs')
-		.default('apiURL', 'http://en.wikipedia.org/w/api.php')
-		.default('prefix', 'enwiki')
-		.default('ns', '0')
+		.usage('Create a HTML dump in a subdir\nUsage: $0')
+		.demand(['apiURL', 'prefix', 'ns'])
+		//.default('apiURL', 'http://en.wikipedia.org/w/api.php')
+		//.default('prefix', 'enwiki')
+		//.default('ns', '0')
 		.argv;
 
 	suspend.async(makeDump)(
