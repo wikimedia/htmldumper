@@ -37,11 +37,13 @@ function* getURL (url) {
 	throw new Error('getURL failed:', url);
 }
 
-function* getArticles (apiURL, namespace) {
+function* getArticles (apiURL, namespace, boundaries) {
 	var articles = [],
-		next = '';
+		start = boundaries[0],
+		end = boundaries[1],
+		next = start;
 
-	while (next !== 'finished') {
+	while (next !== 'finished' && next < end) {
 		var url = apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
 			+ '&gaplimit=500&prop=revisions&gapnamespace='
 			+ namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
@@ -85,7 +87,23 @@ function* makeDump (apiURL, prefix, ns) {
 	try {
 		fs.mkdirSync(prefix);
 	} catch (e) {}
-	var articles = yield* getArticles(apiURL, ns);
+
+	var articles = [],
+		lastBoundary = '',
+		boundaries = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ\uffff'.split('')
+			.map(function(boundary) {
+				var b = [lastBoundary, boundary];
+				lastBoundary = boundary;
+				return b;
+			});
+	console.log(boundaries);
+	var getArticleFn = suspend.async(function* (boundary) {
+		articles = articles.concat(yield* getArticles(apiURL, ns, boundary));
+	});
+	yield async.eachLimit(boundaries, maxConcurrency, getArticleFn, resume());
+
+
+	//var articles = yield* getArticles(apiURL, ns);
 	//console.log(articles);
 	var dumpArticleFn = suspend.async(function* (article) {
 		var title = article[0],
