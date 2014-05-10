@@ -1,3 +1,4 @@
+#!node --harmony --harmony_generators
 "use strict";
 var suspend = require('suspend'),
 	resume = suspend.resume,
