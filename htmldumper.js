@@ -8,8 +8,8 @@ var suspend = require('suspend'),
 	fs = require('fs');
 
 // Higher per-host parallelism
-var maxConcurrency = 30;
-http.globalAgent.maxSockets = 50;
+var maxConcurrency = 50;
+http.globalAgent.maxSockets = maxConcurrency;
 
 // retrying URL get helper
 function* getURL (url) {
@@ -37,50 +37,77 @@ function* getURL (url) {
 	throw new Error('getURL failed:', url);
 }
 
-function* getArticles (apiURL, namespace, boundaries) {
-	var articles = [],
-		start = boundaries[0],
-		end = boundaries[1],
-		next = start;
+function* getArticles (apiURL, namespace, next) {
+	var articles = [];
 
-	while (next !== 'finished' && next < end) {
-		var url = apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
-			+ '&gaplimit=500&prop=revisions&gapnamespace='
-			+ namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
-		console.log(url);
-		try {
-			var res = JSON.parse(yield* getURL(url)),
-				articleChunk = res.query.pages;
-		    Object.keys(articleChunk).forEach( function(key) {
-				var article = articleChunk[key];
-				if ( article.revisions !== undefined ) {
-					var title = article.title.replace( / /g, '_' );
-					articles.push([title, article.revisions[0].revid]);
-				}
-		    });
-			next = res['query-continue'].allpages.gapcontinue;
-			// XXX
-			//next = 'finished';
+	var url = apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
+		+ '&gaplimit=500&prop=revisions&gapnamespace='
+		+ namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
+	console.log(url);
+	try {
+		var res = JSON.parse(yield* getURL(url)),
+			articleChunk = res.query.pages;
+		Object.keys(articleChunk).forEach( function(key) {
+			var article = articleChunk[key];
+			if ( article.revisions !== undefined ) {
+				var title = article.title.replace( / /g, '_' );
+				articles.push([title, article.revisions[0].revid]);
+			}
+		});
+		next = res['query-continue'].allpages.gapcontinue;
+		// XXX
+		//next = 'finished';
 		} catch(e) {
 			console.error('Error in getArticles:', e);
 		}
-	}
-	return articles;
+	return { articles: articles, next: next || '' };
 }
 
 function* dumpArticle (prefix, title, oldid) {
-	console.log('Dumping', title, oldid);
-	var body = yield* getURL('http://parsoid-lb.eqiad.wikimedia.org/'
-			+ prefix + '/' + encodeURIComponent(title) + '?oldid=' + oldid);
 	var dirName = prefix + '/' + encodeURIComponent(title),
 		fileName = dirName + '/' + oldid;
 	try {
+		// Check if we already have this article revision
+		var fileStats = yield fs.stat(fileName, resume());
+		if (fileStats && fileStats.isFile()) {
+			// We already have the article, nothing to do.
+			// XXX: Also track / check last-modified time for template
+			// re-expansions without revisions change
+			console.log('Exists:', title, oldid);
+			return;
+		}
+	} catch (e) { }
+	console.log('Dumping', title, oldid);
+	var body = yield* getURL('http://parsoid-lb.eqiad.wikimedia.org/'
+			+ prefix + '/' + encodeURIComponent(title) + '?oldid=' + oldid);
+	try {
 		yield fs.mkdir(dirName, resume());
 	} catch (e) {}
+
 	// strip data-parsoid
 	body = body.replace(/ ?data-parsoid=(?:'[^']+'|"[^"]+"|\\".*?\\"|&#39;.*?&#39;)/g, '');
 	return yield fs.writeFile(fileName, body, resume());
 }
+
+function* par(functions) {
+	var outstanding = functions.length,
+		cb = resume(),
+		fnCB = function (err, res) {
+			if (err) {
+				return cb(err);
+			}
+			outstanding--;
+			if (!outstanding) {
+				cb(null);
+			}
+		};
+	functions.forEach(function(fun) {
+		suspend.async(fun)(fnCB);
+	});
+	yield null;
+}
+
+
 
 function* makeDump (apiURL, prefix, ns) {
 	// Set up directories
@@ -88,24 +115,15 @@ function* makeDump (apiURL, prefix, ns) {
 		fs.mkdirSync(prefix);
 	} catch (e) {}
 
-	var articles = [],
-		lastBoundary = '',
-		boundaries = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ\uffff'.split('')
-			.map(function(boundary) {
-				var b = [lastBoundary, boundary];
-				lastBoundary = boundary;
-				return b;
-			});
-	console.log(boundaries);
-	// Get all articles at once
-	//var getArticleFn = suspend.async(function* (boundary) {
-	//	articles = articles.concat(yield* getArticles(apiURL, ns, boundary));
-	//});
-	//yield async.eachLimit(boundaries, maxConcurrency, getArticleFn, resume());
-	async.eachLimit(boundaries, 3, suspend.async(function* (boundary) {
-		console.log(boundary);
-		var articles = yield* getArticles(apiURL, ns, boundary);
-		//console.log(articles);
+	var next = '',
+		nextArticles,
+		articles;
+	function* getNextArticles() {
+		var articleResult = yield* getArticles(apiURL, ns, next);
+		nextArticles = articleResult.articles;
+		next = articleResult.next;
+	}
+	function* dumpNextArticles(articles) {
 		var dumpArticleFn = suspend.async(function* (article) {
 			var title = article[0],
 				oldid = article[1];
@@ -116,7 +134,11 @@ function* makeDump (apiURL, prefix, ns) {
 			}
 		});
 		yield async.eachLimit(articles, maxConcurrency, dumpArticleFn, resume());
-	}), resume());
+	}
+	yield* getNextArticles();
+	do {
+		yield* par([getNextArticles, function* () { yield* dumpNextArticles(nextArticles) }]);
+	} while (next !== 'finished');
 }
 
 if (module.parent === null) {
