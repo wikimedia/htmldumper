@@ -143,7 +143,8 @@ function* makeDump (apiURL, prefix, ns) {
 
 if (module.parent === null) {
 	var argv = require('yargs')
-		.usage('Create a HTML dump in a subdir\nUsage: $0')
+		.usage('Create a HTML dump in a subdir\nUsage: $0'
+                + '\nExample: node --harmony htmldumper.js --prefix enwiki --ns 0 --apiURL http://en.wikipedia.org/w/api.php')
 		.demand(['apiURL', 'prefix', 'ns'])
 		//.default('apiURL', 'http://en.wikipedia.org/w/api.php')
 		//.default('prefix', 'enwiki')
