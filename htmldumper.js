@@ -86,6 +86,10 @@ function* dumpArticle (prefix, title, oldid) {
 
 	// strip data-parsoid
 	body = body.replace(/ ?data-parsoid=(?:'[^']+'|"[^"]+"|\\".*?\\"|&#39;.*?&#39;)/g, '');
+    var files = yield fs.readdir(dirName, resume());
+    files.forEach(function(file, cb) {
+        fs.unlink(file, cb);
+    });
 	return yield fs.writeFile(fileName, body, resume());
 }
 
@@ -130,7 +134,7 @@ function* makeDump (apiURL, prefix, ns) {
 			try {
 				return yield* dumpArticle(prefix, title, oldid);
 			} catch (e) {
-				console.error('Error in makeDump:', title, oldid, e);
+				console.error('Error in makeDump:', title, oldid, e.stack);
 			}
 		});
 		yield async.eachLimit(articles, maxConcurrency, dumpArticleFn, resume());
