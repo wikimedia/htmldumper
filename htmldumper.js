@@ -99,14 +99,14 @@ function makeDump (apiURL, prefix, ns) {
             // Fetch the next batch of oldids while processing the last one
             getArticles(apiURL, ns, next),
 
-            Promise.map(articles, function(article) {
+            Promise.filter(articles, function(article) {
                 var title = article[0];
                 var oldid = article[1];
                 return dumpArticle(prefix, title, oldid)
                 .catch(function(e) {
                     console.error('Error in makeDump:', title, oldid, e.stack);
                 });
-            }, { concurrency: maxConcurrency }).then(function(){})
+            }, { concurrency: maxConcurrency })
         ])
         .then(function(results){
             //console.log(results);
