@@ -11,14 +11,13 @@
     "url": "github.com/gwicke/htmldumper"
   },
   "author": "Gabriel Wicke <gwicke@wikimedia.org>",
-  "license": "ISC",
+  "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/gwicke/htmldumper/issues"
   },
   "dependencies": {
-    "suspend": "^0.5.0",
-    "request": "^2.34.0",
-    "async": "^0.8.0",
+    "bluebird": "^2.3.11",
+    "preq": "^0.2.2",
     "yargs": "^1.2.1"
   }
 }
