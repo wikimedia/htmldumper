@@ -1,49 +1,54 @@
 "use strict";
 
-// Prefer bluebird promise implementation over es6-shim pulled in by prfun
-if (!global.Promise) {
+if (!global.Promise || !global.promise.promisify) {
     global.Promise = require('bluebird');
-}
-if (!global.Promise.promisify) {
-    global.Promise.promisifyAll = require('bluebird').promisifyAll;
 }
 
 var preq = require('preq');
-var http = require('http');
 var fs = Promise.promisifyAll(require('fs'));
+var PromiseStream = require('./PromiseStream');
 
-// Higher per-host parallelism
-var maxConcurrency = 50;
-http.globalAgent.maxSockets = maxConcurrency;
+// Article dump parallelism
+var maxConcurrency = 200;
 
-function getArticles (apiURL, namespace, next) {
+function getArticles (apiURL, namespace, res) {
+    var next = res.next || '';
+    if (next === 'finished') {
+        // nothing more to do.
+        return Promise.reject('Articles done');
+    }
 
     var url = apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
         + '&gaplimit=500&prop=revisions&gapnamespace='
         + namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
-    console.log(url);
-        return preq.get(url, { retries: 10 })
-        .then(function(res) {
-            res = res.body;
-            var articles = [];
-            var articleChunk = res.query.pages;
-            Object.keys(articleChunk).forEach( function(key) {
-                var article = articleChunk[key];
-                if ( article.revisions !== undefined ) {
-                    var title = article.title.replace( / /g, '_' );
-                    articles.push([title, article.revisions[0].revid]);
-                }
-            });
-            next = res['query-continue'].allpages.gapcontinue;
-            // XXX
-            //next = 'finished';
-            return { articles: articles, next: next || '' };
-        })
-        .catch(function(e) {
-            console.error('Error in getArticles:', e);
-            throw e;
+    //console.log(url);
+
+    return preq.get(url, { retries: 10 })
+    .then(function(res) {
+        res = res.body;
+        var articles = [];
+        var articleChunk = res.query.pages;
+        Object.keys(articleChunk).forEach( function(key) {
+            var article = articleChunk[key];
+            if ( article.revisions !== undefined ) {
+                var title = article.title.replace( / /g, '_' );
+                articles.push([title, article.revisions[0].revid]);
+            }
         });
+        next = res['query-continue'].allpages.gapcontinue;
+        // XXX
+        //next = 'finished';
+        return {
+            articles: articles,
+            next: next
+        };
+    })
+    .catch(function(e) {
+        console.error('Error in getArticles:', e);
+        throw e;
+    });
 }
+
 
 function dumpArticle (prefix, title, oldid) {
     var dirName = prefix + '/' + encodeURIComponent(title),
@@ -92,33 +97,63 @@ function makeDump (apiURL, prefix, ns) {
         fs.mkdirSync(prefix);
     } catch (e) {}
 
-    function dumpBatch(articleResult) {
-        var articles = articleResult.articles;
-        var next = articleResult.next;
-        Promise.all([
-            // Fetch the next batch of oldids while processing the last one
-            getArticles(apiURL, ns, next),
+    var articleArgs = {
+        apiURL: apiURL,
+        namespace: ns,
+        next: ''
+    };
 
-            Promise.filter(articles, function(article) {
-                var title = article[0];
-                var oldid = article[1];
-                return dumpArticle(prefix, title, oldid)
-                .catch(function(e) {
-                    console.error('Error in makeDump:', title, oldid, e.stack);
-                });
-            }, { concurrency: maxConcurrency })
-        ])
-        .then(function(results){
-            //console.log(results);
-            var articleResult = results[0];
-            if (articleResult.next !== 'finished') {
-                return dumpBatch(articleResult);
+    var articleStream = new PromiseStream(getArticles.bind(null, apiURL, ns),
+            {next: ''}, 10);
+    var articles = [];
+    var waiters = [];
+
+    function processArticles (newArticles) {
+        articles = newArticles.articles;
+        while(waiters.length && articles.length) {
+            waiters.pop().resolve(articles.shift());
+        }
+        if (waiters.length) {
+            articleStream.next().then(processArticles);
+        }
+    }
+
+    function getArticle() {
+        if (articles.length) {
+            return Promise.resolve(articles.shift());
+        } else {
+            if (!waiters.length) {
+                articleStream.next().then(processArticles);
             }
+            return new Promise(function(resolve, reject) {
+                waiters.push({resolve: resolve, reject: reject});
+            });
+        }
+    }
+
+    function dumpOne () {
+        return getArticle()
+        .then(function(article) {
+            var title = article[0];
+            var oldid = article[1];
+            return dumpArticle(prefix, title, oldid)
+            .catch(function(e) {
+                console.error('Error in makeDump:', title, oldid, e.stack);
+            });
         });
     }
 
-    return getArticles(apiURL, ns, '')
-    .then(dumpBatch);
+    var dumpStream = new PromiseStream(dumpOne, undefined, 10, maxConcurrency);
+
+    function loop () {
+        return dumpStream.next()
+        .then(loop)
+        .catch(function(e) {
+            console.log(e);
+        });
+    }
+
+    return loop();
 }
 
 if (module.parent === null) {
