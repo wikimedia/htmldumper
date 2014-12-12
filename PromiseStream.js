@@ -14,7 +14,7 @@ PromiseStream.prototype.next = function () {
     var self = this;
     function startRequest () {
         self._concurrency++;
-        console.log('start', self._concurrency);
+        //console.log('start', self._concurrency);
         var arg;
         if (Array.isArray(self._args) && self._args.length) {
             arg = self._args.shift();
@@ -26,7 +26,7 @@ PromiseStream.prototype.next = function () {
     }
 
     function handleResult (res) {
-        console.log('end', self._concurrency);
+        //console.log('end', self._concurrency);
         self._concurrency--;
         if (self._waiters.length) {
             self._waiters.shift().resolve(res);
