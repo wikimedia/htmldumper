@@ -16,8 +16,8 @@
     "url": "https://github.com/gwicke/htmldumper/issues"
   },
   "dependencies": {
-    "bluebird": "^2.3.11",
-    "preq": "^0.2.2",
-    "yargs": "^1.2.1"
+    "bluebird": "~2.3.11",
+    "preq": "~0.3.1",
+    "yargs": "~1.2.1"
   }
 }
