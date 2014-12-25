@@ -9,7 +9,7 @@ var fs = Promise.promisifyAll(require('fs'));
 var PromiseStream = require('./PromiseStream');
 
 // Article dump parallelism
-var maxConcurrency = 70;
+var maxConcurrency = 10;
 
 function getArticles (apiURL, namespace, res) {
     var next = res.next || '';
@@ -23,7 +23,7 @@ function getArticles (apiURL, namespace, res) {
         + namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
     //console.log(url);
 
-    return preq.get(url, { retries: 10 })
+    return preq.get(url, { timeout: 60* 1000, retries: 5 })
     .then(function(res) {
         res = res.body;
         var articles = [];
@@ -69,11 +69,11 @@ function makeDump (apiURL, prefix, ns, host) {
         next: ''
     };
 
+    // XXX: abstract this into some kind of buffered 'spread' utility
     var articleStream = new PromiseStream(getArticles.bind(null, apiURL, ns),
-            {next: ''}, maxConcurrency);
+            {next: ''}, 6);
     var articles = [];
     var waiters = [];
-
     function processArticles (newArticles) {
         articles = newArticles.articles;
         while(waiters.length && articles.length) {
@@ -109,7 +109,7 @@ function makeDump (apiURL, prefix, ns, host) {
         });
     }
 
-    var dumpStream = new PromiseStream(dumpOne, undefined, maxConcurrency, maxConcurrency);
+    var dumpStream = new PromiseStream(dumpOne, undefined, 1, maxConcurrency);
 
     function loop () {
         return dumpStream.next()
