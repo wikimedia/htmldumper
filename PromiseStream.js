@@ -10,46 +10,47 @@ function PromiseStream (fn, args, size, maxConcurrency) {
     this._waiters = [];
 }
 
+
+PromiseStream.prototype._startRequest = function () {
+    this._concurrency++;
+    //console.log('start', self._concurrency);
+    var arg;
+    if (Array.isArray(this._args) && this._args.length) {
+        arg = this._args.shift();
+    } else {
+        arg = this._args;
+        this._args = undefined;
+    }
+    return this._fn(arg).then(this._handleResult.bind(this));
+};
+
+PromiseStream.prototype._handleResult = function (res) {
+    //console.log('end', self._concurrency);
+    this._concurrency--;
+    if (this._waiters.length) {
+        this._waiters.shift().resolve(res);
+    } else {
+        this._buf.push(res);
+    }
+    if (!this._args) {
+        this._args = res;
+    }
+    if (this._buf.length < this._size) {
+        while (this._concurrency < this._maxConcurrency) {
+            this._startRequest();
+        }
+    }
+};
+
 PromiseStream.prototype.next = function () {
     var self = this;
-    function startRequest () {
-        self._concurrency++;
-        //console.log('start', self._concurrency);
-        var arg;
-        if (Array.isArray(self._args) && self._args.length) {
-            arg = self._args.shift();
-        } else {
-            arg = self._args;
-            self._args = undefined;
-        }
-        return self._fn(arg).then(handleResult);
+
+    while (this._concurrency < this._maxConcurrency) {
+        this._startRequest();
     }
 
-    function handleResult (res) {
-        //console.log('end', self._concurrency);
-        self._concurrency--;
-        if (self._waiters.length) {
-            self._waiters.shift().resolve(res);
-        } else {
-            self._buf.push(res);
-        }
-        if (!self._args) {
-            self._args = res;
-        }
-        if (self._buf.length < self._size) {
-            while (self._concurrency < self._maxConcurrency) {
-                startRequest();
-            }
-        }
-
-    }
-
-    while (self._concurrency < self._maxConcurrency) {
-        startRequest();
-    }
-
-    if (self._buf.length) {
-        return Promise.resolve(self._buf.shift());
+    if (this._buf.length) {
+        return Promise.resolve(this._buf.shift());
     } else {
         return new Promise(function(resolve, reject) {
             self._waiters.push({
