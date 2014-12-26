@@ -61,6 +61,52 @@ function dumpArticle (prefix, title, oldid, host) {
         });
 }
 
+// Processes chunks of articles one by one
+function Dumper (articleChunkStream, prefix, host) {
+    this.articleChunkStream = articleChunkStream;
+    this.prefix = prefix;
+    this.host = host;
+    this.articles = [];
+    this.waiters = [];
+}
+
+Dumper.prototype.processArticles = function (newArticles) {
+    this.articles = newArticles.articles;
+    while(this.waiters.length && this.articles.length) {
+        this.waiters.pop().resolve(this.articles.shift());
+    }
+    if (this.waiters.length) {
+        this.articleChunkStream.next().then(this.processArticles.bind(this));
+    }
+};
+
+Dumper.prototype.getArticle = function () {
+    var self = this;
+    if (this.articles.length) {
+        return Promise.resolve(this.articles.shift());
+    } else {
+        if (!this.waiters.length) {
+            this.articleChunkStream.next().then(this.processArticles.bind(this));
+        }
+        return new Promise(function(resolve, reject) {
+            self.waiters.push({resolve: resolve, reject: reject});
+        });
+    }
+};
+
+Dumper.prototype.next = function () {
+    var self = this;
+    return this.getArticle()
+    .then(function(article) {
+        var title = article[0];
+        var oldid = article[1];
+        return dumpArticle(self.prefix, title, oldid, self.host)
+        .catch(function(e) {
+            console.error('Error in makeDump:', title, oldid, e);
+        });
+    });
+};
+
 
 function makeDump (apiURL, prefix, ns, host) {
     var articleArgs = {
@@ -70,46 +116,11 @@ function makeDump (apiURL, prefix, ns, host) {
     };
 
     // XXX: abstract this into some kind of buffered 'spread' utility
-    var articleStream = new PromiseStream(getArticles.bind(null, apiURL, ns),
+    var articleChunkStream = new PromiseStream(getArticles.bind(null, apiURL, ns),
             {next: ''}, 6);
-    var articles = [];
-    var waiters = [];
-    function processArticles (newArticles) {
-        articles = newArticles.articles;
-        while(waiters.length && articles.length) {
-            waiters.pop().resolve(articles.shift());
-        }
-        if (waiters.length) {
-            articleStream.next().then(processArticles);
-        }
-    }
-
-    function getArticle() {
-        if (articles.length) {
-            return Promise.resolve(articles.shift());
-        } else {
-            if (!waiters.length) {
-                articleStream.next().then(processArticles);
-            }
-            return new Promise(function(resolve, reject) {
-                waiters.push({resolve: resolve, reject: reject});
-            });
-        }
-    }
-
-    function dumpOne () {
-        return getArticle()
-        .then(function(article) {
-            var title = article[0];
-            var oldid = article[1];
-            return dumpArticle(prefix, title, oldid, host)
-            .catch(function(e) {
-                console.error('Error in makeDump:', title, oldid, e.stack);
-            });
-        });
-    }
-
-    var dumpStream = new PromiseStream(dumpOne, undefined, 1, maxConcurrency);
+    var dumper = new Dumper(articleChunkStream, prefix, host);
+    var dumpStream = new PromiseStream(dumper.next.bind(dumper),
+            undefined, 1, maxConcurrency);
 
     function loop () {
         return dumpStream.next()
