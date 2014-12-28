@@ -24,10 +24,10 @@ function getArticles (apiURL, namespace, res) {
     //console.log(url);
 
     return preq.get(url, { timeout: 60* 1000, retries: 5 })
-    .then(function(res) {
-        res = res.body;
+    .then(function(res2) {
+        res2 = res2.body;
         var articles = [];
-        var articleChunk = res.query.pages;
+        var articleChunk = res2.query.pages;
         Object.keys(articleChunk).forEach( function(key) {
             var article = articleChunk[key];
             if ( article.revisions !== undefined ) {
@@ -35,12 +35,12 @@ function getArticles (apiURL, namespace, res) {
                 articles.push([title, article.revisions[0].revid]);
             }
         });
-        next = res['query-continue'].allpages.gapcontinue;
+        var next2 = res2['query-continue'].allpages.gapcontinue;
         // XXX
         //next = 'finished';
         return {
             articles: articles,
-            next: next
+            next: next2
         };
     })
     .catch(function(e) {
@@ -54,10 +54,10 @@ function dumpArticle (prefix, title, oldid, host) {
         console.log('Dumping', title, oldid);
 	var url = 'http://' + host + '/v1/'
                 + prefix + '/pages/' + encodeURIComponent(title) + '/html/' + oldid;
-        return preq.get({uri: url, retries: 20, timeout: 20000 })
+        return preq.get({uri: url, retries: 5, timeout: 60000 })
         .then(function(res) {
-		//console.log('done', title);
-		return;
+            //console.log('done', title);
+            return;
         });
 }
 
