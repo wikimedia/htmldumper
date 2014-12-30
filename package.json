@@ -19,5 +19,8 @@
     "bluebird": "~2.3.11",
     "preq": "~0.3.1",
     "yargs": "~1.2.1"
+  },
+  "devDependencies": {
+    "heapdump": "~0.3.3"
   }
 }

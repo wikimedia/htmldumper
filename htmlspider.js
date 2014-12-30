@@ -4,6 +4,17 @@ if (!global.Promise || !global.promise.promisify) {
     global.Promise = require('bluebird');
 }
 
+// Enable heap dumps in /tmp on kill -USR2.
+// See https://github.com/bnoordhuis/node-heapdump/
+// For node 0.6/0.8: npm install heapdump@0.1.0
+// For 0.10: npm install heapdump
+process.on('SIGUSR2', function() {
+    var heapdump = require('heapdump');
+    console.log( "warning", "SIGUSR2 received! Writing snapshot." );
+    process.chdir('/tmp');
+    heapdump.writeSnapshot();
+});
+
 var preq = require('preq');
 var fs = Promise.promisifyAll(require('fs'));
 var PromiseStream = require('./PromiseStream');
