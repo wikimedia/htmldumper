@@ -23,7 +23,10 @@ function getArticles (apiURL, namespace, res) {
         + namespace + '&format=json&gapcontinue=' + encodeURIComponent( next );
     //console.log(url);
 
-    return preq.get(url, { timeout: 60* 1000, retries: 5 })
+    return preq.get(url, {
+        timeout: 60* 1000,
+        retries: 5
+    })
     .then(function(res2) {
         res2 = res2.body;
         var articles = [];
@@ -40,7 +43,8 @@ function getArticles (apiURL, namespace, res) {
         //next = 'finished';
         return {
             articles: articles,
-            next: next2
+            next: next2,
+            encoding: null
         };
     })
     .catch(function(e) {
@@ -54,7 +58,16 @@ function dumpArticle (prefix, title, oldid, host) {
         console.log('Dumping', title, oldid);
 	var url = 'http://' + host + '/v1/'
                 + prefix + '/pages/' + encodeURIComponent(title) + '/html/' + oldid;
-        return preq.get({uri: url, retries: 5, timeout: 60000 })
+        return preq.get({
+            uri: url,
+            retries: 5,
+            timeout: 60000,
+            // Request a Buffer by default, don't decode to a String. This
+            // saves CPU cycles, but also a lot of memory as large strings are
+            // stored in the old space of the JS heap while Buffers are stored
+            // outside the JS heap.
+            encoding: null
+        })
         .then(function(res) {
             //console.log('done', title);
             return;
