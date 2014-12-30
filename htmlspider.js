@@ -146,9 +146,17 @@ function makeDump (apiURL, prefix, ns, host) {
     var dumpStream = new PromiseStream(dumper.next.bind(dumper),
             undefined, 1, maxConcurrency);
 
+    var i = 0;
     function loop () {
         return dumpStream.next()
-        .then(loop)
+        .then(function () {
+            if (i++ === 10000) {
+                i = 0;
+                process.nextTick(loop);
+            } else {
+                return loop();
+            }
+        })
         .catch(function(e) {
             console.log(e);
         });
