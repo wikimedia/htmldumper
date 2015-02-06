@@ -87,7 +87,7 @@ function saveArticle (options, body, title, oldid) {
 function dumpArticle (options, title, oldid) {
         console.log('Dumping', title, oldid);
 	var url = 'http://' + options.host + '/' + options.prefix
-                + '/v1/pages/' + encodeURIComponent(title) + '/html/' + oldid;
+                + '/v1/page/' + encodeURIComponent(title) + '/html/' + oldid;
         return preq.get({
             uri: url,
             retries: 5,
