@@ -67,8 +67,8 @@ function getArticles (apiURL, namespace, res) {
 
 function dumpArticle (prefix, title, oldid, host) {
         console.log('Dumping', title, oldid);
-	var url = 'http://' + host + '/v1/'
-                + prefix + '/pages/' + encodeURIComponent(title) + '/html/' + oldid;
+	var url = 'http://' + host + '/'
+                + prefix + '/v1/pages/' + encodeURIComponent(title) + '/html/' + oldid;
         return preq.get({
             uri: url,
             retries: 5,
