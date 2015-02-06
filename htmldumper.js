@@ -65,12 +65,16 @@ function getArticles (options, res) {
 }
 
 function saveArticle (options, body, title, oldid) {
-    var dirName = options.saveDir + '/' + options.prefix
-        + '/' + encodeURIComponent(title);
+    var dumpDir = options.saveDir + '/' + options.prefix;
+    var dirName = dumpDir + '/' + encodeURIComponent(title);
     var fileName = dirName + '/' + oldid;
     return fs.readdirAsync(dirName)
     .catch(function(e) {
-        return fs.mkdirAsync(dirName)
+        return fs.mkdirAsync(dumpDir)
+        .catch(function(){})
+        .then(function() {
+            return fs.mkdirAsync(dirName);
+        })
         .then(function() {
             return fs.readdirAsync(dirName);
         });
