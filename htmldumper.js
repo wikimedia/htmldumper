@@ -64,6 +64,28 @@ function getArticles (options, res) {
     });
 }
 
+function checkArticle (options, title, oldid) {
+    var dumpDir = options.saveDir + '/' + options.prefix;
+    var dirName = dumpDir + '/' + encodeURIComponent(title);
+    var fileName = dirName + '/' + oldid;
+    return fs.statAsync(fileName)
+    .catch(function(e) {
+        return false;
+    })
+    .then(function(fileStats) {
+        // Check if we already have this article revision
+        if (fileStats && fileStats.isFile()) {
+            // We already have the article, nothing to do.
+            // XXX: Also track / check last-modified time for template
+            // re-expansions without revisions change
+            console.log('Exists:', title, oldid);
+            return true;
+        } else {
+            return false;
+        }
+    });
+}
+
 function saveArticle (options, body, title, oldid) {
     var dumpDir = options.saveDir + '/' + options.prefix;
     var dirName = dumpDir + '/' + encodeURIComponent(title);
@@ -89,25 +111,37 @@ function saveArticle (options, body, title, oldid) {
 }
 
 function dumpArticle (options, title, oldid) {
-        console.log('Dumping', title, oldid);
-	var url = 'http://' + options.host + '/' + options.prefix
-                + '/v1/page/' + encodeURIComponent(title) + '/html/' + oldid;
-        return preq.get({
-            uri: url,
-            retries: 5,
-            timeout: 60000,
-            // Request a Buffer by default, don't decode to a String. This
-            // saves CPU cycles, but also a lot of memory as large strings are
-            // stored in the old space of the JS heap while Buffers are stored
-            // outside the JS heap.
-            encoding: null
-        })
-        .then(function(res) {
-            //console.log('done', title);
-            if (options.saveDir) {
-                return saveArticle(options, res.body, title, oldid);
-            }
-        });
+    var checkRevision;
+    if (options.saveDir) {
+        checkRevision = checkArticle(options, title, oldid);
+    } else {
+        checkRevision = Promise.resolve(false);
+    }
+
+    return checkRevision
+    .then(function(checkResult) {
+        if (!checkResult) {
+            console.log('Dumping', title, oldid);
+            var url = 'http://' + options.host + '/' + options.prefix
+                        + '/v1/page/' + encodeURIComponent(title) + '/html/' + oldid;
+            return preq.get({
+                uri: url,
+                retries: 5,
+                timeout: 60000,
+                // Request a Buffer by default, don't decode to a String. This
+                // saves CPU cycles, but also a lot of memory as large strings are
+                // stored in the old space of the JS heap while Buffers are stored
+                // outside the JS heap.
+                encoding: null
+            })
+            .then(function(res) {
+                //console.log('done', title);
+                if (options.saveDir) {
+                    return saveArticle(options, res.body, title, oldid);
+                }
+            });
+        }
+    });
 }
 
 // Processes chunks of articles one by one
