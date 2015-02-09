@@ -36,11 +36,8 @@ function getArticles (options, res) {
 
     return preq.get({
         uri: url,
-        headers: {
-            'accept-encoding': 'gzip'
-        },
         timeout: 60* 1000,
-        retries: 3
+        retries: 5
     })
     .then(function(res2) {
         res2 = res2.body;
@@ -130,6 +127,9 @@ function dumpArticle (options, title, oldid) {
                         + '/v1/page/' + encodeURIComponent(title) + '/html/' + oldid;
             return preq.get({
                 uri: url,
+                headers: {
+                    'accept-encoding': 'gzip'
+                },
                 retries: 5,
                 timeout: 60000,
                 // Request a Buffer by default, don't decode to a String. This
