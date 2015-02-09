@@ -34,9 +34,13 @@ function getArticles (options, res) {
         + options.ns + '&format=json&gapcontinue=' + encodeURIComponent( next );
     //console.log(url);
 
-    return preq.get(url, {
+    return preq.get({
+        uri: url,
+        headers: {
+            'accept-encoding': 'gzip'
+        },
         timeout: 60* 1000,
-        retries: 5
+        retries: 3
     })
     .then(function(res2) {
         res2 = res2.body;
