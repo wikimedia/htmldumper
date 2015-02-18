@@ -20,7 +20,7 @@ var fs = Promise.promisifyAll(require('fs'));
 var PromiseStream = require('./PromiseStream');
 
 // Article dump parallelism
-var maxConcurrency = 30;
+var maxConcurrency = 50;
 
 function getArticles (options, res) {
     var next = res.next || '';
@@ -124,7 +124,7 @@ function dumpArticle (options, title, oldid) {
         if (!checkResult) {
             console.log('Dumping', title, oldid);
             var url = 'http://' + options.host + '/' + options.prefix
-                        + '/v1/page/' + encodeURIComponent(title) + '/html/' + oldid;
+                        + '/v1/page/html/' + encodeURIComponent(title) + '/' + oldid;
             return preq.get({
                 uri: url,
                 headers: {
