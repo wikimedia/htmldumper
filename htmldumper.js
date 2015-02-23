@@ -1,8 +1,6 @@
 "use strict";
 
-if (!global.Promise || !global.promise.promisify) {
-    global.Promise = require('bluebird');
-}
+var Bluebird = require('bluebird');
 
 // Enable heap dumps in /tmp on kill -USR2.
 // See https://github.com/bnoordhuis/node-heapdump/
@@ -16,7 +14,7 @@ process.on('SIGUSR2', function() {
 });
 
 var preq = require('preq');
-var fs = Promise.promisifyAll(require('fs'));
+var fs = Bluebird.promisifyAll(require('fs'));
 var PromiseStream = require('./PromiseStream');
 
 // Article dump parallelism
@@ -26,7 +24,7 @@ function getArticles (options, res) {
     var next = res.next || '';
     if (next === 'finished') {
         // nothing more to do.
-        return Promise.reject('Articles done');
+        return Bluebird.reject('Articles done');
     }
 
     var url = options.apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
@@ -116,14 +114,14 @@ function dumpArticle (options, title, oldid) {
     if (options.saveDir) {
         checkRevision = checkArticle(options, title, oldid);
     } else {
-        checkRevision = Promise.resolve(false);
+        checkRevision = Bluebird.resolve(false);
     }
 
     return checkRevision
     .then(function(checkResult) {
         if (!checkResult) {
             console.log('Dumping', title, oldid);
-            var url = 'http://' + options.host + '/' + options.prefix
+            var url = options.host + '/' + options.prefix
                         + '/v1/page/html/' + encodeURIComponent(title) + '/' + oldid;
             return preq.get({
                 uri: url,
@@ -169,12 +167,12 @@ Dumper.prototype.processArticles = function (newArticles) {
 Dumper.prototype.getArticle = function () {
     var self = this;
     if (this.articles.length) {
-        return Promise.resolve(this.articles.shift());
+        return Bluebird.resolve(this.articles.shift());
     } else {
         if (!this.waiters.length) {
             this.articleChunkStream.next().then(this.processArticles.bind(this));
         }
-        return new Promise(function(resolve, reject) {
+        return new Bluebird(function(resolve, reject) {
             self.waiters.push({resolve: resolve, reject: reject});
         });
     }
@@ -222,19 +220,27 @@ function makeDump (options) {
 }
 
 if (module.parent === null) {
-    var argv = require('yargs')
+    var argParser = require('yargs')
         .usage('Create a HTML dump in a subdir\nUsage: $0'
-                + '\nExample: node htmldumper.js --prefix en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php')
+                + '\nExample:\nnode htmldumper.js --prefix en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php --host http://rest.wikimedia.org')
         .demand(['apiURL', 'prefix', 'ns', 'host'])
+        .options('h', {
+            alias: 'help'
+        })
         .options('d', {
             alias : 'saveDir',
             default : ''
-        })
+        });
         //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
         //.default('prefix', 'en.wikipedia.org')
         //.default('ns', '0')
-        //.default('host', 'https://rest.wikimedia.org')
-        .argv;
+        //.default('host', 'http://rest.wikimedia.org');
+
+    var argv = argParser.argv;
+    if (argv.h) {
+        argParser.showHelp();
+        process.exit(1);
+    }
 
     argv.ns = Number(argv.ns);
     return makeDump(argv)

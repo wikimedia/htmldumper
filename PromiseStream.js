@@ -1,5 +1,7 @@
 "use strict";
 
+var Bluebird = require('bluebird');
+
 function PromiseStream (fn, args, size, maxConcurrency) {
     this._buf = [];
     this._fn = fn;
@@ -50,9 +52,9 @@ PromiseStream.prototype.next = function () {
     }
 
     if (this._buf.length) {
-        return Promise.resolve(this._buf.shift());
+        return Bluebird.resolve(this._buf.shift());
     } else {
-        return new Promise(function(resolve, reject) {
+        return new Bluebird(function(resolve, reject) {
             self._waiters.push({
                 resolve: resolve,
                 reject: reject
