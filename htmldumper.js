@@ -222,11 +222,12 @@ function makeDump (options) {
 if (module.parent === null) {
     var argParser = require('yargs')
         .usage('Create a HTML dump in a subdir\nUsage: $0'
-                + '\nExample:\nnode htmldumper.js --prefix en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php --host http://rest.wikimedia.org')
-        .demand(['apiURL', 'prefix', 'ns', 'host'])
+                + '\nExample:\nnode htmldumper.js --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php --host http://rest.wikimedia.org')
+        .demand(['apiURL', 'domain', 'ns', 'host'])
         .options('h', {
             alias: 'help'
         })
+        .alias('domain', 'prefix')
         .options('d', {
             alias : 'saveDir',
             default : ''
