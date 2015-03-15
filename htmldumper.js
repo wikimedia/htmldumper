@@ -222,7 +222,7 @@ function makeDump (options) {
 if (module.parent === null) {
     var argParser = require('yargs')
         .usage('Create a HTML dump in a subdir\nUsage: $0'
-                + '\nExample:\nnode htmldumper.js --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php --host http://rest.wikimedia.org')
+                + '\nExample:\nnode htmldumper.js --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php')
         .demand(['apiURL', 'domain', 'ns', 'host'])
         .options('h', {
             alias: 'help'
@@ -231,11 +231,11 @@ if (module.parent === null) {
         .options('d', {
             alias : 'saveDir',
             default : ''
-        });
+        })
         //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
         //.default('prefix', 'en.wikipedia.org')
         //.default('ns', '0')
-        //.default('host', 'http://rest.wikimedia.org');
+        .default('host', 'http://rest.wikimedia.org');
 
     var argv = argParser.argv;
     if (argv.h) {

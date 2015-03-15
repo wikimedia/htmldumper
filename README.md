@@ -1,5 +1,5 @@
 # htmldumper
-HTML dump script for Parsoid HTML
+Parsoid HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
 
 ## Installation
 
@@ -11,13 +11,13 @@ HTML dump script for Parsoid HTML
 Usage: node ./htmldumper
 Example: node htmldumper.js --domain en.wikipedia.org \
   --ns 0 --apiURL http://en.wikipedia.org/w/api.php \
-  --host https://rest.wikimedia.org --saveDir /tmp
+  --saveDir /tmp
 
 Options:
   --apiURL       [required]
   --domain       [required]
   --ns           [required]
-  --host         [required]
+  --host         [required] [default: "http://rest.wikimedia.org"]
   -d, --saveDir  [default: no saving]
 ```
 
