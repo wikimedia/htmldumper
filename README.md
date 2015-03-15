@@ -9,13 +9,13 @@ HTML dump script for Parsoid HTML
 
 ```
 Usage: node ./htmldumper
-Example: node htmldumper.js --prefix en.wikipedia.org \
+Example: node htmldumper.js --domain en.wikipedia.org \
   --ns 0 --apiURL http://en.wikipedia.org/w/api.php \
-  --host https://rest.wikimedia.org/ --saveDir /tmp
+  --host https://rest.wikimedia.org --saveDir /tmp
 
 Options:
   --apiURL       [required]
-  --prefix       [required]
+  --domain       [required]
   --ns           [required]
   --host         [required]
   -d, --saveDir  [default: no saving]
