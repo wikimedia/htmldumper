@@ -242,6 +242,9 @@ if (module.parent === null) {
         process.exit(1);
     }
 
+    // Strip a trailing slash
+    argv.host = argv.host.replace(/\/$/, '');
+
     argv.ns = Number(argv.ns);
     return makeDump(argv)
     .then(function(res) {
