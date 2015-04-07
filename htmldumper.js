@@ -1,9 +1,9 @@
 "use strict";
 
-var Bluebird = require('bluebird');
+var P = require('bluebird');
 
-var FileStore = require('./filestore');
-var SQLiteStore = require('./sqlitestore');
+var makeFileStore = require('./filestore');
+var makeSQLiteStore = require('./sqlitestore');
 
 // Enable heap dumps in /tmp on kill -USR2.
 // See https://github.com/bnoordhuis/node-heapdump/
@@ -26,7 +26,7 @@ function getArticles (options, res) {
     var next = res.next || '';
     if (next === 'finished') {
         // nothing more to do.
-        return Bluebird.reject('Articles done');
+        return P.reject('Articles done');
     }
 
     var url = options.apiURL + '?action=query&generator=allpages&gapfilterredir=nonredirects'
@@ -70,7 +70,7 @@ function dumpArticle (options, title, oldid) {
     if (options.store) {
         checkRevision = options.store.checkArticle(title, oldid);
     } else {
-        checkRevision = Bluebird.resolve(false);
+        checkRevision = P.resolve(false);
     }
 
     return checkRevision
@@ -125,12 +125,12 @@ Dumper.prototype.processArticles = function (newArticles) {
 Dumper.prototype.getArticle = function () {
     var self = this;
     if (this.articles.length) {
-        return Bluebird.resolve(this.articles.shift());
+        return P.resolve(this.articles.shift());
     } else {
         if (!this.waiters.length) {
             this.articleChunkStream.next().then(this.processArticles.bind(this));
         }
-        return new Bluebird(function(resolve, reject) {
+        return new P(function(resolve, reject) {
             self.waiters.push({resolve: resolve, reject: reject});
         });
     }
@@ -210,13 +210,18 @@ if (module.parent === null) {
 
     argv.ns = Number(argv.ns);
 
+    var storeSetup = P.resolve();
     if (argv.saveDir) {
-        argv.store = new FileStore(argv);
+        storeSetup = makeFileStore(argv);
     } else if (argv.dataBase) {
-        argv.store = new SQLiteStore(argv);
+        storeSetup = makeSQLiteStore(argv);
     }
 
-    return makeDump(argv)
+    return storeSetup
+    .then(function(store) {
+        argv.store = store;
+        return makeDump(argv);
+    })
     .then(function(res) {
         console.log('Dump done.');
     })

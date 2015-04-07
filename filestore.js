@@ -1,10 +1,14 @@
 "use strict";
-var Bluebird = require('bluebird');
-var fs = Bluebird.promisifyAll(require('fs'));
+var P = require('bluebird');
+var fs = P.promisifyAll(require('fs'));
 
 function FileStore(options) {
     this.options = options;
 }
+
+FileStore.prototype.setup = function() {
+    return P.resolve(this);
+};
 
 FileStore.prototype.checkArticle = function checkArticle (title, oldid) {
     var options = this.options;
@@ -21,7 +25,6 @@ FileStore.prototype.checkArticle = function checkArticle (title, oldid) {
             // We already have the article, nothing to do.
             // XXX: Also track / check last-modified time for template
             // re-expansions without revisions change
-            console.log('Exists:', title, oldid);
             return true;
         } else {
             return false;
@@ -54,4 +57,6 @@ FileStore.prototype.saveArticle = function saveArticle (body, title, oldid) {
     });
 };
 
-module.exports = FileStore;
+module.exports = function makeFileStore(options) {
+    return new FileStore(options).setup();
+};

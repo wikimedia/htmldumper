@@ -3,6 +3,14 @@ var P = require('bluebird');
 var fs = P.promisifyAll(require('fs'));
 var sqlite3 = P.promisifyAll(require('sqlite3'));
 
+var pragmas = [
+    'PRAGMA main.page_size = 4096',
+    'PRAGMA main.cache_size=10000',
+    'PRAGMA main.locking_mode=EXCLUSIVE',
+    'PRAGMA main.synchronous=NORMAL',
+    'PRAGMA main.journal_mode=WAL',
+    'PRAGMA main.cache_size=5000'
+];
 var createTableQuery = 'CREATE TABLE IF NOT EXISTS data('
         + 'title TEXT, revision INTEGER, body BLOB, namespace INTEGER'
         + ', PRIMARY KEY(title ASC, revision DESC)'
@@ -14,16 +22,28 @@ var saveQuery = 'insert into data (title, revision, body, namespace) values (?,?
 function SQLiteStore(options) {
     this.options = options;
     this.db = new sqlite3.Database(options.dataBase);
-    this.db.exec(createTableQuery);
-    this.queries = {
-        check: this.db.prepare(checkQuery),
-        purgeTitle: this.db.prepare(purgeTitleQuery),
-        save: this.db.prepare(saveQuery),
-    };
 }
 
+SQLiteStore.prototype.setup = function() {
+    var self = this;
+    return this.db.execAsync(createTableQuery)
+        .then(function() {
+            return P.all(pragmas.map(function(pragma) {
+                return self.db.execAsync(pragma);
+            }));
+        })
+        .then(function() {
+            self.queries = {
+                check: self.db.prepare(checkQuery),
+                purgeTitle: self.db.prepare(purgeTitleQuery),
+                save: self.db.prepare(saveQuery),
+            };
+            return self;
+        });
+};
+
 SQLiteStore.prototype.checkArticle = function checkArticle (title, oldid) {
-    return this.queries.check.getAsync(title, oldid)
+    return this.queries.check.getAsync(title, oldid);
 };
 
 SQLiteStore.prototype.saveArticle = function saveArticle (body, title, oldid) {
@@ -34,4 +54,6 @@ SQLiteStore.prototype.saveArticle = function saveArticle (body, title, oldid) {
     });
 };
 
-module.exports = SQLiteStore;
+module.exports = function makeSQLiteStore(options) {
+    return new SQLiteStore(options).setup();
+};
