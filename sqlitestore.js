@@ -7,13 +7,23 @@ var pragmas = [
     'PRAGMA main.page_size = 4096',
     'PRAGMA main.cache_size=10000',
     'PRAGMA main.locking_mode=EXCLUSIVE',
-    'PRAGMA main.synchronous=NORMAL',
-    'PRAGMA main.journal_mode=WAL',
-    'PRAGMA main.cache_size=5000'
+    'PRAGMA main.synchronous=OFF', // more dangerous, but fast
+    //'PRAGMA main.synchronous=NORMAL',
+    //'PRAGMA main.journal_mode=WAL', // WAL is annoying for distributed files
 ];
 var createTableQuery = 'CREATE TABLE IF NOT EXISTS data('
-        + 'title TEXT, revision INTEGER, body BLOB, namespace INTEGER'
-        + ', PRIMARY KEY(title ASC, revision DESC)'
+        + 'title TEXT,'
+        + 'revision INTEGER,'
+        + 'body BLOB,'
+        + 'bigendian_v1_uuid text,' // etag header, reordered
+        // Metadata that we'll have to extract from the revision or HTML head.
+        + 'page_id INTEGER,' // missing from revision metadata
+        + 'namespace INTEGER,'
+        + 'timestamp TEXT,' // missing from revision metadata
+        + 'comment TEXT,'
+        + 'user_name TEXT,'
+        + 'user_id INTEGER,'
+        + 'PRIMARY KEY(title ASC, revision DESC)'
         + ')';
 var checkQuery = 'select revision from data where title = ? and revision = ? limit 1';
 var purgeTitleQuery = 'delete from data where title = ?';
