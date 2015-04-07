@@ -2,6 +2,9 @@
 
 var Bluebird = require('bluebird');
 
+var FileStore = require('./filestore');
+var SQLiteStore = require('./sqlitestore');
+
 // Enable heap dumps in /tmp on kill -USR2.
 // See https://github.com/bnoordhuis/node-heapdump/
 // For node 0.6/0.8: npm install heapdump@0.1.0
@@ -14,7 +17,6 @@ process.on('SIGUSR2', function() {
 });
 
 var preq = require('preq');
-var fs = Bluebird.promisifyAll(require('fs'));
 var PromiseStream = require('./PromiseStream');
 
 // Article dump parallelism
@@ -63,56 +65,10 @@ function getArticles (options, res) {
     });
 }
 
-function checkArticle (options, title, oldid) {
-    var dumpDir = options.saveDir + '/' + options.prefix;
-    var dirName = dumpDir + '/' + encodeURIComponent(title);
-    var fileName = dirName + '/' + oldid;
-    return fs.statAsync(fileName)
-    .catch(function(e) {
-        return false;
-    })
-    .then(function(fileStats) {
-        // Check if we already have this article revision
-        if (fileStats && fileStats.isFile()) {
-            // We already have the article, nothing to do.
-            // XXX: Also track / check last-modified time for template
-            // re-expansions without revisions change
-            console.log('Exists:', title, oldid);
-            return true;
-        } else {
-            return false;
-        }
-    });
-}
-
-function saveArticle (options, body, title, oldid) {
-    var dumpDir = options.saveDir + '/' + options.prefix;
-    var dirName = dumpDir + '/' + encodeURIComponent(title);
-    var fileName = dirName + '/' + oldid;
-    return fs.readdirAsync(dirName)
-    .catch(function(e) {
-        return fs.mkdirAsync(dumpDir)
-        .catch(function(){})
-        .then(function() {
-            return fs.mkdirAsync(dirName);
-        })
-        .then(function() {
-            return fs.readdirAsync(dirName);
-        });
-    })
-    .then(function(files) {
-        // Asynchronously unlink other files
-        files.forEach(function(file) {
-            fs.unlinkAsync(dirName + '/' + file);
-        });
-        return fs.writeFileAsync(fileName, body);
-    });
-}
-
 function dumpArticle (options, title, oldid) {
     var checkRevision;
-    if (options.saveDir) {
-        checkRevision = checkArticle(options, title, oldid);
+    if (options.store) {
+        checkRevision = options.store.checkArticle(title, oldid);
     } else {
         checkRevision = Bluebird.resolve(false);
     }
@@ -138,10 +94,12 @@ function dumpArticle (options, title, oldid) {
             })
             .then(function(res) {
                 //console.log('done', title);
-                if (options.saveDir) {
-                    return saveArticle(options, res.body, title, oldid);
+                if (options.store) {
+                    return options.store.saveArticle(res.body, title, oldid);
                 }
             });
+        } else {
+            console.log('Exists:', title, oldid);
         }
     });
 }
@@ -232,6 +190,10 @@ if (module.parent === null) {
             alias : 'saveDir',
             default : ''
         })
+        .options('db', {
+            alias : 'dataBase',
+            default : ''
+        })
         //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
         //.default('prefix', 'en.wikipedia.org')
         //.default('ns', '0')
@@ -247,6 +209,13 @@ if (module.parent === null) {
     argv.host = argv.host.replace(/\/$/, '');
 
     argv.ns = Number(argv.ns);
+
+    if (argv.saveDir) {
+        argv.store = new FileStore(argv);
+    } else if (argv.dataBase) {
+        argv.store = new SQLiteStore(argv);
+    }
+
     return makeDump(argv)
     .then(function(res) {
         console.log('Dump done.');
