@@ -8,7 +8,7 @@ var pragmas = [
     'PRAGMA main.cache_size=10000',
     'PRAGMA main.locking_mode=EXCLUSIVE',
     'PRAGMA main.synchronous=OFF', // more dangerous, but fast
-    'PRAGMA mmap_size=268435456',  // use fast mmap
+    'PRAGMA mmap_size=1099511627776',  // use fast mmap for entire db
     //'PRAGMA main.synchronous=NORMAL',
     //'PRAGMA main.journal_mode=WAL', // WAL is annoying for distributed files
 ];
