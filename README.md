@@ -18,8 +18,11 @@ Options:
   --domain       [required]
   --ns           [required]
   --host         [required] [default: "http://rest.wikimedia.org"]
-  -d, --saveDir  [default: no saving]
+  -d, --saveDir  Directory to store a dump in (named by domain) [default: no saving]
+  --db, --dataBase  SQLite database name [default: no saving]
 ```
+
+### Filesystem output
 
 With `--saveDir` as specified in the example above, a directory structure like
 this will be created:
@@ -38,3 +41,24 @@ The directory names for articles are percent-encoded using JavaScript's
 updated articles are downloaded. Outdated revisions are deleted. These
 incremental dumps speed up the process significantly, and reduce the load on
 the servers.
+
+### SQLite database output
+
+With `--dataBase` set to `someSQLiteDB.db`, a database will be created /
+updated. The schema currently looks like this:
+
+```sql
+REATE TABLE data(
+    title TEXT,
+    revision INTEGER,
+    body BLOB,
+    bigendian_v1_uuid text,
+    page_id INTEGER,
+    namespace INTEGER,
+    timestamp TEXT,
+    comment TEXT,
+    user_name TEXT,
+    user_id INTEGER,
+    PRIMARY KEY(title ASC, revision DESC)
+);
+```
