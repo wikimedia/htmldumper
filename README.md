@@ -5,7 +5,7 @@ Parsoid HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
 
 `npm install`
 
-## Usage
+## Usage: Dumping a single wikis
 
 ```
 Usage: node ./bin/dump_wiki
@@ -61,4 +61,27 @@ REATE TABLE data(
     user_id INTEGER,
     PRIMARY KEY(title ASC, revision DESC)
 );
+```
+
+## Usage: dumping all restbase wikis
+
+You need to install `pixz`, which is used for parallel lzma / xz compression:
+
+`apt-get install pixz`
+
+With this in place, follow the instructions:
+
+```bash
+# node bin/dump_restbase --help
+
+Create HTML dumps in a directoy
+
+Example usage:
+node ./bin/dump_restbase --workDir /tmp --dumpDir /tmp
+
+Options:
+  -h, --help     Show help and exit.
+  -v, --verbose  Verbose logging
+  --workDir      Directory to use for in-progress dump files  [default: "/tmp"]
+  --dumpDir      Directory to use for finished dump files     [default: "/tmp"]
 ```
