@@ -1,19 +1,22 @@
 {
   "name": "htmldump",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Parsoid HTML dump utility",
-  "main": "htmldump.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+      "dump_restbase": "./bin/dump_restbase",
+      "dump_wiki": "./bin/dump_wiki"
+  },
   "repository": {
     "type": "git",
-    "url": "github.com/gwicke/htmldumper"
+    "url": "github.com/wikimedia/htmldumper"
   },
   "author": "Gabriel Wicke <gwicke@wikimedia.org>",
-  "license": "GPLv3",
+  "license": "Apache2",
   "bugs": {
-    "url": "https://github.com/gwicke/htmldumper/issues"
+    "url": "https://github.com/wikimedia/htmldumper/issues"
   },
   "dependencies": {
     "bluebird": "~2.3.11",
