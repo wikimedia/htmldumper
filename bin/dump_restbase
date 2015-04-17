@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+"use strict";
+
+var dumpAllWikis = require('../lib/dump_restbase');
+
+var argParser = require('yargs')
+    .usage('Create HTML dumps in a directoy\n'
+            + '\nExample usage:\n$0 --workDir /tmp --dumpDir /tmp')
+    .options('h', {
+        alias: 'help',
+        describe: 'Show help and exit.',
+    })
+    .options('v', {
+        alias: 'verbose',
+        describe: 'Verbose logging',
+    })
+    .options('workDir', {
+        default: '/tmp',
+        describe: 'Directory to use for in-progress dump files',
+    })
+    .options('dumpDir', {
+        default: '/tmp',
+        describe: 'Directory to use for finished dump files',
+    });
+var options = argParser.argv;
+
+if (options.h) {
+    argParser.showHelp();
+    process.exit(1);
+}
+
+return dumpAllWikis(options);

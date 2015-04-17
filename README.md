@@ -8,8 +8,8 @@ Parsoid HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
 ## Usage
 
 ```
-Usage: node ./htmldumper
-Example: node htmldumper.js --domain en.wikipedia.org \
+Usage: node ./bin/dump_wiki
+Example: node ./bin/dump_wiki --domain en.wikipedia.org \
   --ns 0 --apiURL http://en.wikipedia.org/w/api.php \
   --saveDir /tmp
 
@@ -51,8 +51,8 @@ updated. The schema currently looks like this:
 REATE TABLE data(
     title TEXT,
     revision INTEGER,
-    body BLOB,
-    bigendian_v1_uuid text,
+    tid TEXT,
+    body TEXT,
     page_id INTEGER,
     namespace INTEGER,
     timestamp TEXT,

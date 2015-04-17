@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+"use strict";
+
+var P = require('bluebird');
+
+var makeDump = require('../lib/htmldump');
+
+var argParser = require('yargs')
+    .usage('Create a HTML dump in a subdir\n\n'
+            + '\nExample:\n$0 --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php')
+    .demand(['apiURL', 'domain', 'ns', 'host'])
+    .options('h', {
+        alias: 'help'
+    })
+    .alias('domain', 'prefix')
+    .options('d', {
+        alias : 'saveDir',
+        default : ''
+    })
+    .options('db', {
+        alias : 'dataBase',
+        default : ''
+    })
+    .options('verbose', {
+        default : true
+    })
+    //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
+    //.default('prefix', 'en.wikipedia.org')
+    //.default('ns', '0')
+    .default('host', 'http://rest.wikimedia.org');
+
+var argv = argParser.argv;
+if (argv.h) {
+    argParser.showHelp();
+    process.exit(1);
+}
+
+// Strip a trailing slash
+argv.host = argv.host.replace(/\/$/, '');
+
+argv.ns = Number(argv.ns);
+
+return makeDump(argv)
+.then(function(res) {
+    console.log('Dump done.');
+})
+.catch(function(err) {
+    console.error('Error in main;', err);
+});
