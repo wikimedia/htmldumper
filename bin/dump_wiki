@@ -41,9 +41,6 @@ argv.host = argv.host.replace(/\/$/, '');
 argv.ns = Number(argv.ns);
 
 return makeDump(argv)
-.then(function(res) {
-    console.log('Dump done.');
-})
 .catch(function(err) {
     console.error('Error in main;', err);
 });
