@@ -1,11 +1,11 @@
 # htmldumper
-Parsoid HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
+HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
 
 ## Installation
 
 `npm install`
 
-## Usage: Dumping a single wikis
+## Usage: Dumping a single wiki
 
 ```
 Usage: node ./bin/dump_wiki
@@ -63,7 +63,7 @@ REATE TABLE data(
 );
 ```
 
-## Usage: dumping all restbase wikis
+## Usage: dumping all RESTBase wikis
 
 You need to install `pixz`, which is used for parallel lzma / xz compression:
 
