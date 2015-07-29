@@ -1,13 +1,13 @@
 {
   "name": "htmldump",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Parsoid HTML dump utility",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-      "dump_restbase": "./bin/dump_restbase",
-      "dump_wiki": "./bin/dump_wiki"
+    "dump_restbase": "./bin/dump_restbase",
+    "dump_wiki": "./bin/dump_wiki"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "bluebird": "~2.3.11",
+    "core-js": "^1.0.0",
     "preq": "~0.3.1",
     "sqlite3": "^3.0.5",
     "yargs": "~1.2.1"
