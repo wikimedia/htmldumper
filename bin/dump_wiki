@@ -17,6 +17,10 @@ var argParser = require('yargs')
         alias : 'saveDir',
         default : ''
     })
+    .options('t', {
+        alias: 'startTitle',
+        default: ''
+    })
     .options('db', {
         alias : 'dataBase',
         default : ''
