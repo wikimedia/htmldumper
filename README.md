@@ -8,18 +8,21 @@ HTML dump script for RESTBase APIs like https://rest.wikimedia.org/.
 ## Usage: Dumping a single wiki
 
 ```
-Usage: node ./bin/dump_wiki
-Example: node ./bin/dump_wiki --domain en.wikipedia.org \
-  --ns 0 --apiURL http://en.wikipedia.org/w/api.php \
-  --saveDir /tmp
+$ node bin/dump_wiki --help
+Create a HTML dump in a subdir
+
+Example:
+/usr/bin/nodejs ./bin/dump_wiki --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php
 
 Options:
-  --apiURL       [required]
-  --domain       [required]
-  --ns           [required]
-  --host         [required] [default: "http://rest.wikimedia.org"]
-  -d, --saveDir  Directory to store a dump in (named by domain) [default: no saving]
-  --db, --dataBase  SQLite database name [default: no saving]
+  --apiURL            [required]
+  --domain, --prefix  [required]
+  --ns                [required]
+  --host              [required]  [default: "http://rest.wikimedia.org"]
+  -d, --saveDir       [default: ""]
+  -t, --startTitle    [default: ""]
+  --db, --dataBase    [default: ""]
+  --verbose           [default: true]
 ```
 
 ### Filesystem output
