@@ -32,6 +32,10 @@ var argParser = require('yargs')
     .options('verbose', {
         default : true
     })
+    .options('c', {
+        alias: 'concurrency',
+        default: 50
+    })
     //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
     //.default('prefix', 'en.wikipedia.org')
     //.default('ns', '0')
