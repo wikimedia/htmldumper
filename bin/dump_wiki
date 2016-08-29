@@ -21,6 +21,10 @@ var argParser = require('yargs')
         alias: 'startTitle',
         default: ''
     })
+    .options('a', {
+        alias: 'userAgent',
+        default: 'HTMLDumper'
+    })
     .options('db', {
         alias : 'dataBase',
         default : ''
