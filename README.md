@@ -16,14 +16,38 @@ Example:
 
 Options:
   --apiURL            [required]
-  --domain, --prefix  [required]
   --ns                [required]
-  --host              [required]  [default: "http://rest.wikimedia.org"]
+  --host              [required]
+  --domain, --prefix  [default: ""]
   -d, --saveDir       [default: ""]
   -t, --startTitle    [default: ""]
+  -a, --userAgent     [default: "HTMLDumper"]
   --db, --dataBase    [default: ""]
   --verbose           [default: true]
+  -c, --concurrency   [default: 50]
+  -u, --url           [default: "{{host}}/{{domain}}/v1/page/html/{title}/{oldid}"]
 ```
+
+Parameters:
+- **`apiURL`**: The location of the Wiki's MW Action API end point.
+- **`ns`**: The namespace index to dump.
+- **`host`**: The host to send the dump requests to.
+- **`domain`**: If the host contains multiple domains, the one to reach.
+- **`saveDir`**: If saving the contents of the dump to a directory structure,
+  this is the path to the root of the directory (see the following section).
+- **`startTitle`**: If resuming a Wiki dump, the article title to start with.
+- **`userAgent`**: The UserAgent header to use when sending requests. Default:
+  `HMTLDumper`
+- **`dataBase`**: If saving the contents to a SQLite3 database, the path to the
+  file to save it to (see the next sections).
+- **`verbose`**: Be verbose.
+- **`concurrency`**: The number of parallel article fetches to do. Default:
+  `50`.
+- **`url`**: The [URL
+  template](https://github.com/wikimedia/swagger-router#uri-templating) to use
+  when making requests for each article. The available parameters are: `title`,
+  `oldid` and all of the options that can be set on the command line (`host`,
+  `domain`, etc.). Default: `{{host}}/{{domain}}/v1/page/html/{title}/{oldid}`
 
 ### Filesystem output
 
