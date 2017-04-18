@@ -8,11 +8,14 @@ var makeDump = require('../lib/htmldump');
 var argParser = require('yargs')
     .usage('Create a HTML dump in a subdir\n\n'
             + '\nExample:\n$0 --domain en.wikipedia.org --ns 0 --apiURL http://en.wikipedia.org/w/api.php')
-    .demand(['apiURL', 'domain', 'ns', 'host'])
+    .demand(['apiURL', 'ns', 'host'])
     .options('h', {
         alias: 'help'
     })
-    .alias('domain', 'prefix')
+    .options('domain', {
+        alias: 'prefix',
+        default: ''
+    })
     .options('d', {
         alias : 'saveDir',
         default : ''
@@ -36,10 +39,14 @@ var argParser = require('yargs')
         alias: 'concurrency',
         default: 50
     })
+    .options('u', {
+        alias: 'url',
+        default: '{{host}}/{{domain}}/v1/page/html/{title}/{oldid}'
+    })
     //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
     //.default('prefix', 'en.wikipedia.org')
     //.default('ns', '0')
-    .default('host', 'http://rest.wikimedia.org');
+    //.default('host', 'http://rest.wikimedia.org');
 
 var argv = argParser.argv;
 if (argv.h) {
