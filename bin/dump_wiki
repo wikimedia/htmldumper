@@ -43,6 +43,10 @@ var argParser = require('yargs')
         alias: 'url',
         default: '{{host}}/{{domain}}/v1/page/html/{title}/{oldid}'
     })
+    .options('n', {
+        alias: 'noCache',
+        default: false
+    })
     //.default('apiURL', 'http://en.wikipedia.org/w/api.php')
     //.default('prefix', 'en.wikipedia.org')
     //.default('ns', '0')
